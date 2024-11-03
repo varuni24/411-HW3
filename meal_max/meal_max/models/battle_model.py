@@ -97,31 +97,24 @@ class BattleModel:
         self.combatants.clear()
 
     def get_battle_score(self, combatant: Meal) -> float:
-        """
-        Calculates the battle score for a given Meal combatant based on
-        its attributes.
+        """Calculates the battle score for the given combatant based on price, cuisine length, and
+        difficulty level of the meal.
 
         Args:
-            combatant (Meal): The Meal instance for which to calculate the score.
+            combatant (Meal): An instance of Meal for which the battle score is to be calculated.
 
         Returns:
             float: The calculated battle score for the combatant.
         """
+
         difficulty_modifier = {"HIGH": 1, "MED": 2, "LOW": 3}
 
         # Log the calculation process
-        logger.info(
-            "Calculating battle score for %s: price=%.3f, cuisine=%s, difficulty=%s",
-            combatant.meal,
-            combatant.price,
-            combatant.cuisine,
-            combatant.difficulty,
-        )
+        logger.info("Calculating battle score for %s: price=%.3f, cuisine=%s, difficulty=%s",
+                    combatant.meal, combatant.price, combatant.cuisine, combatant.difficulty)
 
         # Calculate score
-        score = (combatant.price * len(combatant.cuisine)) - difficulty_modifier[
-            combatant.difficulty
-        ]
+        score = (combatant.price * len(combatant.cuisine)) - difficulty_modifier[combatant.difficulty]
 
         # Log the calculated score
         logger.info("Battle score for %s: %.3f", combatant.meal, score)
@@ -129,30 +122,27 @@ class BattleModel:
         return score
 
     def get_combatants(self) -> List[Meal]:
-        """
-        Retrieves the current list of combatants in the battle lineup.
+        """Retrieves the current list of combatants.
 
         Returns:
-            List[Meal]: A list of Meal instances representing the current combatants.
+            List[Meal]: The list of current combatants in the battle.
         """
         logger.info("Retrieving current list of combatants.")
         return self.combatants
 
     def prep_combatant(self, combatant_data: Meal):
-        """
-        Adds a Meal instance to the combatants list.
+        """Adds a combatant to the list of combatants.
 
         Args:
-            combatant_data (Meal): The Meal instance to add to the combatants list.
+            combatant_data (Meal): An insteance of Meal to be added as a combatant.
 
         Raises:
-            ValueError: If the combatants list already contains two entries.
+            ValueError: If the combatants list is already full (i.e has 2 entries).
         """
+
+
         if len(self.combatants) >= 2:
-            logger.error(
-                "Attempted to add combatant '%s' but combatants list is full",
-                combatant_data.meal,
-            )
+            logger.error("Attempted to add combatant '%s' but combatants list is full", combatant_data.meal)
             raise ValueError("Combatant list is full, cannot add more combatants.")
 
         # Log the addition of the combatant
@@ -161,7 +151,4 @@ class BattleModel:
         self.combatants.append(combatant_data)
 
         # Log the current state of combatants
-        logger.info(
-            "Current combatants list: %s",
-            [combatant.meal for combatant in self.combatants],
-        )
+        logger.info("Current combatants list: %s", [combatant.meal for combatant in self.combatants])
