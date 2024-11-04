@@ -14,7 +14,7 @@ configure_logger(logger)
 
 @dataclass
 class Meal:
-    """Represents a meal with its attributes and methods for database interaction
+    """Represents a meal with its attributes and methods.
 
     Attributes:
         id (int): The unique identifier for the meal.
@@ -42,7 +42,7 @@ class Meal:
 
 
 def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
-    """Creates a new meal and adds it to database.
+    """Creates a new meal and adds it to the database.
 
     Args:
         meal (str): The name of the meal.
@@ -53,7 +53,7 @@ def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
     Raises:
         ValueError: If the price is invalid or difficulty is not in the expected range.
         sqlite3.IntegrityError: If a meal with the same name already exists.
-        sqlite3.Error: Other atabase errors.
+        sqlite3.Error: Other database errors.
     """
 
     if not isinstance(price, (int, float)) or price <= 0:
@@ -104,10 +104,10 @@ def clear_meals() -> None:
 
 
 def delete_meal(meal_id: int) -> None:
-    """Marks a meal as deleted in the database based on its ID.
+    """Deletes a meal in the database based on its ID.
 
     Args:
-        meal_id (int): The unique identifier of the meal to be deleted.
+        meal_id (int): The ID of the meal to be deleted.
 
     Raises:
         ValueError: If the meal has already been deleted or doesn't exist.
@@ -194,13 +194,13 @@ def get_leaderboard(sort_by: str="wins") -> dict[str, Any]:
 
 
 def get_meal_by_id(meal_id: int) -> Meal:
-    """Gets a meal from the database by its ID.
+    """Retrieves a meal from the database by its ID.
 
     Args:
-        meal_id (int): The unique identifier of the meal to retrieve.
+        meal_id (int): The ID of the meal to retrieve.
 
     Returns:
-        Meal: An instance of Meal containing meal details.
+        Meal: An instance of Meal containing the meal details.
 
     Raises:
         ValueError: If the meal is deleted or doesn't exist.
@@ -228,13 +228,13 @@ def get_meal_by_id(meal_id: int) -> Meal:
 
 
 def get_meal_by_name(meal_name: str) -> Meal:
-    """Gets a meal from the database by its name.
+    """Retrieves a meal from the database by its name.
 
     Args:
         meal_name (str): The name of the meal to retrieve.
 
     Returns:
-        Meal: An instance of Meal containing meal details.
+        Meal: An instance of Meal containing the meal details.
 
     Raises:
         ValueError: If the meal is deleted or doesn't exist.
@@ -265,7 +265,7 @@ def update_meal_stats(meal_id: int, result: str) -> None:
     """Updates battle statistics for a meal based on a battle result.
 
     Args:
-        meal_id (int): The unique identifier of the meal.
+        meal_id (int): The ID of the meal.
         result (str): The outcome of the battle, either "win" or "loss".
 
     Raises:
