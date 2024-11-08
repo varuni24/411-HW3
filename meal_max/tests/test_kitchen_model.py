@@ -12,6 +12,7 @@ from meal_max.models.kitchen_model import (
     get_meal_by_id,
     get_meal_by_name,
     update_meal_stats,
+    get_leaderboard,
 )
 
 ######################################################
@@ -60,7 +61,6 @@ def mock_cursor(mocker):
 def test_create_meal(mock_cursor):
     """Test creating a new meal in the database."""
 
-    # Call the function to create a new meal
     create_meal(meal="Pasta", cuisine="Italian", price=10.00, difficulty="MED")
 
     expected_query = normalize_whitespace(
@@ -72,12 +72,10 @@ def test_create_meal(mock_cursor):
 
     actual_query = normalize_whitespace(mock_cursor.execute.call_args[0][0])
 
-    # Assert that the SQL query was correct
     assert (
         actual_query == expected_query
     ), "The SQL query did not match the expected structure."
 
-    # Extract the arguments used in the SQL call
     actual_arguments = mock_cursor.execute.call_args[0][1]
     expected_arguments = ("Pasta", "Italian", 10.00, "MED")
     assert (
@@ -88,7 +86,6 @@ def test_create_meal(mock_cursor):
 def test_create_meal_duplicate(mock_cursor):
     """Test creating a duplicate meal (should raise an error)."""
 
-    # Simulate that the database will raise an IntegrityError due to a duplicate entry
     mock_cursor.execute.side_effect = sqlite3.IntegrityError(
         "UNIQUE constraint failed: meals.meal"
     )
@@ -119,7 +116,6 @@ def test_create_meal_invalid_difficulty():
 def test_delete_meal(mock_cursor):
     """Test soft deleting a meal by meal ID."""
 
-    # Simulate that the meal exists (id = 1)
     mock_cursor.fetchone.return_value = [False]
 
     delete_meal(1)
@@ -220,7 +216,6 @@ def test_get_meal_by_id_success(mock_cursor):
 def test_get_meal_by_id_not_found(mock_cursor):
     """Test getting a meal by ID that does not exist."""
 
-    # Simulate that no meal is found
     mock_cursor.fetchone.return_value = None
 
     with pytest.raises(ValueError, match="Meal with ID 999 not found"):
@@ -259,7 +254,6 @@ def test_get_meal_by_name_not_found(mock_cursor):
 def test_update_meal_stats_win(mock_cursor):
     """Test updating the meal stats for a win."""
 
-    # Simulate that the meal exists and is not deleted
     mock_cursor.fetchone.return_value = (False,)
 
     update_meal_stats(1, "win")
@@ -273,7 +267,6 @@ def test_update_meal_stats_win(mock_cursor):
 def test_update_meal_stats_invalid_result(mock_cursor):
     """Test updating meal stats with an invalid result."""
 
-    # Mock to simulate that the meal exists and is not deleted
     mock_cursor.fetchone.return_value = [False]
 
     with pytest.raises(
@@ -285,8 +278,116 @@ def test_update_meal_stats_invalid_result(mock_cursor):
 def test_update_meal_stats_deleted_meal(mock_cursor):
     """Test updating meal stats for a meal that has been deleted."""
 
-    # Simulate that the meal is deleted
     mock_cursor.fetchone.return_value = (True,)
 
     with pytest.raises(ValueError, match="Meal with ID 1 has been deleted"):
         update_meal_stats(1, "win")
+
+
+######################################################
+#
+#    Leaderboard Tests
+#
+######################################################
+
+
+def test_get_leaderboard_sort_by_wins(mock_cursor):
+    """Test retrieving the leaderboard sorted by wins."""
+    mock_cursor.fetchall.return_value = [
+        (1, "Pasta", "Italian", 10.0, "MED", 10, 8, 0.8),
+        (2, "Sushi", "Japanese", 12.0, "LOW", 12, 9, 0.75),
+        (3, "Burger", "American", 8.0, "HIGH", 15, 5, 0.33),
+    ]
+
+    leaderboard = get_leaderboard(sort_by="wins")
+
+    expected_leaderboard = [
+        {
+            "id": 1,
+            "meal": "Pasta",
+            "cuisine": "Italian",
+            "price": 10.0,
+            "difficulty": "MED",
+            "battles": 10,
+            "wins": 8,
+            "win_pct": 80.0,
+        },
+        {
+            "id": 2,
+            "meal": "Sushi",
+            "cuisine": "Japanese",
+            "price": 12.0,
+            "difficulty": "LOW",
+            "battles": 12,
+            "wins": 9,
+            "win_pct": 75.0,
+        },
+        {
+            "id": 3,
+            "meal": "Burger",
+            "cuisine": "American",
+            "price": 8.0,
+            "difficulty": "HIGH",
+            "battles": 15,
+            "wins": 5,
+            "win_pct": 33.0,
+        },
+    ]
+
+    assert (
+        leaderboard == expected_leaderboard
+    ), f"Expected {expected_leaderboard}, got {leaderboard}"
+
+
+def test_get_leaderboard_sort_by_win_pct(mock_cursor):
+    """Test retrieving the leaderboard sorted by win percentage."""
+    mock_cursor.fetchall.return_value = [
+        (1, "Pasta", "Italian", 10.0, "MED", 10, 8, 0.8),
+        (2, "Sushi", "Japanese", 12.0, "LOW", 12, 9, 0.75),
+        (3, "Burger", "American", 8.0, "HIGH", 15, 5, 0.33),
+    ]
+
+    leaderboard = get_leaderboard(sort_by="win_pct")
+
+    expected_leaderboard = [
+        {
+            "id": 1,
+            "meal": "Pasta",
+            "cuisine": "Italian",
+            "price": 10.0,
+            "difficulty": "MED",
+            "battles": 10,
+            "wins": 8,
+            "win_pct": 80.0,
+        },
+        {
+            "id": 2,
+            "meal": "Sushi",
+            "cuisine": "Japanese",
+            "price": 12.0,
+            "difficulty": "LOW",
+            "battles": 12,
+            "wins": 9,
+            "win_pct": 75.0,
+        },
+        {
+            "id": 3,
+            "meal": "Burger",
+            "cuisine": "American",
+            "price": 8.0,
+            "difficulty": "HIGH",
+            "battles": 15,
+            "wins": 5,
+            "win_pct": 33.0,
+        },
+    ]
+
+    assert (
+        leaderboard == expected_leaderboard
+    ), f"Expected {expected_leaderboard}, got {leaderboard}"
+
+
+def test_get_leaderboard_invalid_sort_by(mock_cursor):
+    """Test retrieving the leaderboard with an invalid sort_by parameter."""
+    with pytest.raises(ValueError, match="Invalid sort_by parameter: invalid_param"):
+        get_leaderboard(sort_by="invalid_param")
