@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from flask import Flask, jsonify, make_response, Response, request
+
 # from flask_cors import CORS
 
 from meal_max.models import kitchen_model
@@ -26,7 +27,7 @@ battle_model = BattleModel()
 ####################################################
 
 
-@app.route('/api/health', methods=['GET'])
+@app.route("/api/health", methods=["GET"])
 def healthcheck() -> Response:
     """
     Health check route to verify the service is running.
@@ -34,10 +35,11 @@ def healthcheck() -> Response:
     Returns:
         JSON response indicating the health status of the service.
     """
-    app.logger.info('Health check')
-    return make_response(jsonify({'status': 'healthy'}), 200)
+    app.logger.info("Health check")
+    return make_response(jsonify({"status": "healthy"}), 200)
 
-@app.route('/api/db-check', methods=['GET'])
+
+@app.route("/api/db-check", methods=["GET"])
 def db_check() -> Response:
     """
     Route to check if the database connection and meals table are functional.
@@ -54,9 +56,9 @@ def db_check() -> Response:
         app.logger.info("Checking if meals table exists...")
         check_table_exists("meals")
         app.logger.info("meals table exists.")
-        return make_response(jsonify({'database_status': 'healthy'}), 200)
+        return make_response(jsonify({"database_status": "healthy"}), 200)
     except Exception as e:
-        return make_response(jsonify({'error': str(e)}), 404)
+        return make_response(jsonify({"error": str(e)}), 404)
 
 
 ##########################################################
@@ -66,7 +68,7 @@ def db_check() -> Response:
 ##########################################################
 
 
-@app.route('/api/create-meal', methods=['POST'])
+@app.route("/api/create-meal", methods=["POST"])
 def add_meal() -> Response:
     """
     Route to add a new meal to the database.
@@ -83,19 +85,31 @@ def add_meal() -> Response:
         400 error if input validation fails.
         500 error if there is an issue adding the combatant to the database.
     """
-    app.logger.info('Creating new meal')
+    app.logger.info("Creating new meal")
     try:
         # Get the JSON data from the request
         data = request.get_json()
 
         # Extract and validate required fields
-        meal = data.get('meal')
-        cuisine = data.get('cuisine')
-        price = data.get('price')
-        difficulty = data.get('difficulty')
+        meal = data.get("meal")
+        cuisine = data.get("cuisine")
+        price = data.get("price")
+        difficulty = data.get("difficulty")
 
-        if not meal or not cuisine or price is None or difficulty not in ['HIGH', 'MED', 'LOW']:
-            return make_response(jsonify({'error': 'Invalid input, all fields are required with valid values'}), 400)
+        if (
+            not meal
+            or not cuisine
+            or price is None
+            or difficulty not in ["HIGH", "MED", "LOW"]
+        ):
+            return make_response(
+                jsonify(
+                    {
+                        "error": "Invalid input, all fields are required with valid values"
+                    }
+                ),
+                400,
+            )
 
         # Check that price is a float and has at most two decimal places
         try:
@@ -103,19 +117,46 @@ def add_meal() -> Response:
             if round(price, 2) != price:
                 raise ValueError("Price has more than two decimal places")
         except ValueError as e:
-            return make_response(jsonify({'error': 'Price must be a valid float with at most two decimal places'}), 400)
+            return make_response(
+                jsonify(
+                    {
+                        "error": "Price must be a valid float with at most two decimal places"
+                    }
+                ),
+                400,
+            )
 
         # Call the kitchen_model function to add the combatant to the database
-        app.logger.info('Adding meal: %s, %s, %.2f, %s', meal, cuisine, price, difficulty)
+        app.logger.info(
+            "Adding meal: %s, %s, %.2f, %s", meal, cuisine, price, difficulty
+        )
         kitchen_model.create_meal(meal, cuisine, price, difficulty)
 
         app.logger.info("Combatant added: %s", meal)
-        return make_response(jsonify({'status': 'combatant added', 'combatant': meal}), 201)
+        return make_response(jsonify({"status": "success", "combatant": meal}), 201)
     except Exception as e:
         app.logger.error("Failed to add combatant: %s", str(e))
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
-@app.route('/api/delete-meal/<int:meal_id>', methods=['DELETE'])
+
+@app.route("/api/clear-meals", methods=["DELETE"])
+def clear_catalog() -> Response:
+    """
+    Route to clear all meals (recreates the table).
+
+    Returns:
+        JSON response indicating success of the operation or error message.
+    """
+    try:
+        app.logger.info("Clearing the meals")
+        kitchen_model.clear_meals()
+        return make_response(jsonify({"status": "success"}), 200)
+    except Exception as e:
+        app.logger.error(f"Error clearing catalog: {e}")
+        return make_response(jsonify({"error": str(e)}), 500)
+
+
+@app.route("/api/delete-meal/<int:meal_id>", methods=["DELETE"])
 def delete_meal(meal_id: int) -> Response:
     """
     Route to delete a meal by its ID. This performs a soft delete by marking it as deleted.
@@ -130,12 +171,13 @@ def delete_meal(meal_id: int) -> Response:
         app.logger.info(f"Deleting meal by ID: {meal_id}")
 
         kitchen_model.delete_meal(meal_id)
-        return make_response(jsonify({'status': 'meal deleted'}), 200)
+        return make_response(jsonify({"status": "success"}), 200)
     except Exception as e:
         app.logger.error(f"Error deleting meal: {e}")
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
-@app.route('/api/get-meal-by-id/<int:meal_id>', methods=['GET'])
+
+@app.route("/api/get-meal-by-id/<int:meal_id>", methods=["GET"])
 def get_meal_by_id(meal_id: int) -> Response:
     """
     Route to get a meal by its ID.
@@ -150,12 +192,13 @@ def get_meal_by_id(meal_id: int) -> Response:
         app.logger.info(f"Retrieving meal by ID: {meal_id}")
 
         meal = kitchen_model.get_meal_by_id(meal_id)
-        return make_response(jsonify({'status': 'success', 'meal': meal}), 200)
+        return make_response(jsonify({"status": "success", "meal": meal}), 200)
     except Exception as e:
         app.logger.error(f"Error retrieving meal by ID: {e}")
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
-@app.route('/api/get-meal-by-name/<string:meal_name>', methods=['GET'])
+
+@app.route("/api/get-meal-by-name/<string:meal_name>", methods=["GET"])
 def get_meal_by_name(meal_name: str) -> Response:
     """
     Route to get a meal by its name.
@@ -170,13 +213,13 @@ def get_meal_by_name(meal_name: str) -> Response:
         app.logger.info(f"Retrieving meal by name: {meal_name}")
 
         if not meal_name:
-            return make_response(jsonify({'error': 'Meal name is required'}), 400)
+            return make_response(jsonify({"error": "Meal name is required"}), 400)
 
         meal = kitchen_model.get_meal_by_name(meal_name)
-        return make_response(jsonify({'status': 'success', 'meal': meal}), 200)
+        return make_response(jsonify({"status": "success", "meal": meal}), 200)
     except Exception as e:
         app.logger.error(f"Error retrieving meal by name: {e}")
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
 
 ############################################################
@@ -186,7 +229,7 @@ def get_meal_by_name(meal_name: str) -> Response:
 ############################################################
 
 
-@app.route('/api/battle', methods=['GET'])
+@app.route("/api/battle", methods=["GET"])
 def battle() -> Response:
     """
     Route to initiate a battle between the two currently prepared meals.
@@ -197,16 +240,17 @@ def battle() -> Response:
         500 error if there is an issue during the battle.
     """
     try:
-        app.logger.info('Two meals enter, one meal leaves!')
+        app.logger.info("Two meals enter, one meal leaves!")
 
         winner = battle_model.battle()
 
-        return make_response(jsonify({'status': 'battle complete', 'winner': winner}), 200)
+        return make_response(jsonify({"status": "success", "winner": winner}), 200)
     except Exception as e:
         app.logger.error(f"Battle error: {e}")
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
-@app.route('/api/clear-combatants', methods=['POST'])
+
+@app.route("/api/clear-combatants", methods=["POST"])
 def clear_combatants() -> Response:
     """
     Route to clear the list of combatants for the battle.
@@ -217,15 +261,16 @@ def clear_combatants() -> Response:
         500 error if there is an issue clearing combatants.
     """
     try:
-        app.logger.info('Clearing all combatants...')
+        app.logger.info("Clearing all combatants...")
         battle_model.clear_combatants()
-        app.logger.info('Combatants cleared.')
-        return make_response(jsonify({'status': 'combatants cleared'}), 200)
+        app.logger.info("Combatants cleared.")
+        return make_response(jsonify({"status": "success"}), 200)
     except Exception as e:
         app.logger.error("Failed to clear combatants: %s", str(e))
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
-@app.route('/api/get-combatants', methods=['GET'])
+
+@app.route("/api/get-combatants", methods=["GET"])
 def get_combatants() -> Response:
     """
     Route to get the list of combatants for the battle.
@@ -234,14 +279,17 @@ def get_combatants() -> Response:
         JSON response with the list of combatants.
     """
     try:
-        app.logger.info('Getting combatants...')
+        app.logger.info("Getting combatants...")
         combatants = battle_model.get_combatants()
-        return make_response(jsonify({'status': 'success', 'combatants': combatants}), 200)
+        return make_response(
+            jsonify({"status": "success", "combatants": combatants}), 200
+        )
     except Exception as e:
         app.logger.error("Failed to get combatants: %s", str(e))
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
-@app.route('/api/prep-combatant', methods=['POST'])
+
+@app.route("/api/prep-combatant", methods=["POST"])
 def prep_combatant() -> Response:
     """
     Route to prepare a prep a meal making it a combatant for a battle.
@@ -256,11 +304,11 @@ def prep_combatant() -> Response:
     """
     try:
         data = request.json
-        meal = data.get('meal')
+        meal = data.get("meal")
         app.logger.info("Preparing combatant: %s", meal)
 
         if not meal:
-            return make_response(jsonify({'error': 'You must name a combatant'}), 400)
+            return make_response(jsonify({"error": "You must name a combatant"}), 400)
 
         try:
             meal = kitchen_model.get_meal_by_name(meal)
@@ -268,12 +316,14 @@ def prep_combatant() -> Response:
             combatants = battle_model.get_combatants()
         except Exception as e:
             app.logger.error("Failed to prepare combatant: %s", str(e))
-            return make_response(jsonify({'error': str(e)}), 500)
-        return make_response(jsonify({'status': 'combatant prepared', 'combatants': combatants}), 200)
+            return make_response(jsonify({"error": str(e)}), 500)
+        return make_response(
+            jsonify({"status": "success", "combatants": combatants}), 200
+        )
 
     except Exception as e:
         app.logger.error("Failed to prepare combatants: %s", str(e))
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
 
 ############################################################
@@ -283,7 +333,7 @@ def prep_combatant() -> Response:
 ############################################################
 
 
-@app.route('/api/leaderboard', methods=['GET'])
+@app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard() -> Response:
     """
     Route to get the leaderboard of meals sorted by wins, battles, or win percentage.
@@ -297,17 +347,18 @@ def get_leaderboard() -> Response:
         500 error if there is an issue generating the leaderboard.
     """
     try:
-        sort_by = request.args.get('sort', 'wins')  # Default sort by wins
+        sort_by = request.args.get("sort", "wins")  # Default sort by wins
         app.logger.info("Generating leaderboard sorted by %s", sort_by)
 
         leaderboard_data = kitchen_model.get_leaderboard(sort_by)
 
-        return make_response(jsonify({'status': 'success', 'leaderboard': leaderboard_data}), 200)
+        return make_response(
+            jsonify({"status": "success", "leaderboard": leaderboard_data}), 200
+        )
     except Exception as e:
         app.logger.error(f"Error generating leaderboard: {e}")
-        return make_response(jsonify({'error': str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 500)
 
 
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5001)

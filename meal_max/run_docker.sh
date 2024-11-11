@@ -3,8 +3,8 @@
 # Variables
 IMAGE_NAME="meal_max"
 CONTAINER_TAG="0.2.0"
-HOST_PORT=5000
-CONTAINER_PORT=5000
+HOST_PORT=5001
+CONTAINER_PORT=5001
 DB_VOLUME_PATH="./db"   # Adjust this to the desired host path for the database persistence
 BUILD=true  # Set this to true if you want to build the image
 
@@ -20,6 +20,23 @@ fi
 if [ ! -d "${DB_VOLUME_PATH}" ]; then
   echo "Creating database directory at ${DB_VOLUME_PATH}..."
   mkdir -p ${DB_VOLUME_PATH}
+fi
+
+# Stop and remove the running container if it exists
+if [ "$(docker ps -q -a -f name=${IMAGE_NAME}_container)" ]; then
+    echo "Stopping running container: ${IMAGE_NAME}_container"
+    docker stop ${IMAGE_NAME}_container
+
+    # Check if the stop was successful
+    if [ $? -eq 0 ]; then
+        echo "Removing container: ${IMAGE_NAME}_container"
+        docker rm ${IMAGE_NAME}_container
+    else
+        echo "Failed to stop container: ${IMAGE_NAME}_container"
+        exit 1
+    fi
+else
+    echo "No running container named ${IMAGE_NAME}_container found."
 fi
 
 # Run the Docker container with the necessary ports and volume mappings
